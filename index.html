@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Laboratorio de Procesamiento Numérico</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head><body>
+<header><h1>Laboratorio de Procesamiento Numérico</h1>
+<p>Análisis experimental de la relación entre estatura y peso corporal</p>
+<span class="badge">Procesamiento Numérico</span> <span id="estado" class="badge warn">Sin procesar</span></header>
+<nav><button data-tab="datos" class="on">1. Datos experimentales</button>
+<button data-tab="proc">2. Procesamiento numérico</button>
+<button data-tab="res">3. Resultados y conclusión</button></nav>
+
+<main>
+<section id="datos" class="tab on">
+<p>x = estatura (cm) es la variable independiente (se mide directamente); y = peso (kg) es la dependiente que se desea estimar.</p>
+<div class="row"><input id="ix" type="number" step="any" placeholder="Estatura (cm)">
+<input id="iy" type="number" step="any" placeholder="Peso (kg)">
+<button id="add">Agregar</button>
+<input id="file" type="file" accept=".csv,.txt">
+<button id="exp">Exportar CSV</button><button id="clear" class="danger">Borrar todo</button></div>
+<p id="msg" class="msg"></p>
+<div class="scroll"><table id="tabla"><thead><tr><th>ID</th><th>Estatura (cm)</th><th>Peso (kg)</th><th></th></tr></thead><tbody></tbody></table></div>
+<p><b id="count">0</b> observaciones válidas (mínimo 20).</p>
+<ul id="avisos"></ul>
+<button id="procesar" class="main">Procesar datos</button>
+<canvas id="cPrev" height="120"></canvas>
+</section>
+
+<section id="proc" class="tab">
+<div class="row"><label>Estatura objetivo (cm) <input id="target" type="number" step="any"></label>
+<label>Grado <select id="deg"><option>1</option><option>2</option><option>3</option><option>4</option></select></label></div>
+<div id="procOut"><p>Procesa los datos en el apartado 1.</p></div>
+<canvas id="cReg" height="130"></canvas>
+</section>
+
+<section id="res" class="tab"><div id="resOut"><p>Procesa los datos en el apartado 1.</p></div>
+<canvas id="cLoo" height="110"></canvas></section>
+</main>
+<script src="js/statistics.js"></script><script src="js/regression.js"></script>
+<script src="js/lagrange.js"></script><script src="js/charts.js"></script><script src="js/app.js"></script>
+</body></html>
