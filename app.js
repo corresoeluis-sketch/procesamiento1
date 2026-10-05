@@ -4,7 +4,7 @@ let data = [], nextId = 1, R = null;
 
 function valid(x, y) { return Number.isFinite(x) && Number.isFinite(y) && x > 0 && y > 0; }
 function invalidate() { R = null; $('estado').textContent = 'Sin procesar'; $('estado').className = 'badge warn';
-  $('procOut').innerHTML = $('resOut').innerHTML = '<p>Datos modificados: vuelve a procesar.</p>'; }
+  $('procOut').innerHTML = $('resOut').innerHTML = '<p>Datos modificados: vuelve a procesar.</p>'; $('indOut').innerHTML = ''; }
 
 function render() {
   $('tabla').tBodies[0].innerHTML = data.map((p, i) =>
@@ -76,9 +76,9 @@ function showProc() {
   }
   $('procOut').innerHTML = h;
   const lo = Math.min(...x), hi = Math.max(...x), curves = [];
-  if (!lin.error) curves.push({ label: 'Lineal', color: '#60a5fa', data: Charts.curve(lin.f, lo, hi, 2) });
-  if (!quad.error) curves.push({ label: 'Cuadrática', color: '#f59e0b', data: Charts.curve(quad.f, lo, hi) });
-  if (!L.error) curves.push({ label: 'Lagrange local', color: '#f472b6', data: Charts.curve(u => Lagrange.eval(L.nodes, u), L.nodes[0].x, L.nodes.at(-1).x) });
+  if (!lin.error) curves.push({ label: 'Lineal', color: '#739912', data: Charts.curve(lin.f, lo, hi, 2) });
+  if (!quad.error) curves.push({ label: 'Cuadrática', color: '#c9c9c9', data: Charts.curve(quad.f, lo, hi) });
+  if (!L.error) curves.push({ label: 'Lagrange local', color: '#ffb27a', data: Charts.curve(u => Lagrange.eval(L.nodes, u), L.nodes[0].x, L.nodes.at(-1).x) });
   Charts.scatter('cReg', data, curves);
 }
 function showRes() {
@@ -90,7 +90,7 @@ function showRes() {
   ${loo.map(s => `<tr><td>${s.degree}</td><td>${s.m.n}</td><td>${fmt(s.m.mae)}</td><td>${fmt(s.m.mse)}</td><td>${fmt(s.m.mape, 3)}</td><td>${fmt(s.m.sdRel, 3)}</td><td>${fmt(s.m.r2, 4)}</td></tr>`).join('')}</table>`;
   const ok = loo.filter(s => s.m.n);
   const best = ok.sort((a, b) => a.m.mse - b.m.mse)[0];
-  h += `<h3>Conclusión</h3><p>Entre ${data.length} observaciones, r = ${fmt(r, 4)}. ` +
+  h += `<h3>Conclusión para el público general</h3>${conclusionPublica()}<h3>Conclusión técnica (para especialistas)</h3><p>Entre ${data.length} observaciones, r = ${fmt(r, 4)}. ` +
     (lin.stats ? `La regresión lineal explica R² = ${fmt(lin.stats.r2, 4)} de la variabilidad (s_y/x = ${fmt(lin.stats.syx, 3)} kg). ` : '') +
     (quad.stats ? `La cuadrática alcanza R² = ${fmt(quad.stats.r2, 4)}; un R² mayor dentro de la muestra no garantiza mejor predicción, pues tiene más parámetros. ` : '') +
     (best ? `Por LOOCV, el grado de Lagrange con menor MSE fuera de muestra es ${best.degree} (MSE = ${fmt(best.m.mse, 3)}); revisa si la diferencia con los demás es pequeña antes de declarar un ganador. ` : 'LOOCV no pudo evaluarse. ') +
@@ -103,3 +103,43 @@ function showRes() {
   Charts.loocv('cLoo', loo);
 }
 render();
+
+$('est').onclick = () => {
+  const t = parseFloat($('ex').value), real = parseFloat($('ey').value), hasReal = Number.isFinite(real) && real > 0;
+  if (!R) { $('indOut').innerHTML = '<p class="msg">Primero procesa los datos (apartado 1).</p>'; return; }
+  if (!(t > 0)) { $('indOut').innerHTML = '<p class="msg">Escribe una estatura positiva.</p>'; return; }
+  const lo = Math.min(...R.x), hi = Math.max(...R.x), rows = [];
+  if (!R.lin.error) rows.push(['Regresión lineal', R.lin.f(t), '']);
+  if (!R.quad.error) rows.push(['Regresión cuadrática', R.quad.f(t), '']);
+  [1, 2, 3, 4].forEach(m => {
+    const L = Lagrange.predict(data, t, m);
+    rows.push([`Lagrange grado ${m}`, L.error ? NaN : L.value, L.error || (L.inRange ? '' : 'fuera del intervalo de nodos: no confiable')]);
+  });
+  let h = (t < lo || t > hi) ? `<p class="msg">Aviso: ${t} cm está fuera del rango experimental (${lo}–${hi} cm); es una extrapolación poco confiable.</p>` : '';
+  h += `<table><tr><th>Modelo</th><th>Peso estimado (kg)</th>${hasReal ? '<th>Error (real − estimado)</th>' : ''}<th>Nota</th></tr>` +
+    rows.map(r => `<tr><td>${r[0]}</td><td>${fmt(r[1], 2)}</td>${hasReal ? `<td>${fmt(real - r[1], 2)}</td>` : ''}<td>${r[2]}</td></tr>`).join('') + '</table>' +
+    '<p>Estas estimaciones son valores aproximados, no diagnósticos de salud.</p>';
+  $('indOut').innerHTML = h;
+};
+
+function conclusionPublica() {
+  const { lin, quad, loo, r } = R, n = data.length, out = [];
+  const fuerza = Math.abs(r) >= 0.8 ? 'fuerte' : Math.abs(r) >= 0.5 ? 'moderada' : 'débil';
+  if (!Number.isFinite(r)) out.push('No fue posible medir la relación entre estatura y peso con estos datos.');
+  else if (r > 0) out.push(`Con los datos de ${n} personas se observa que, en general, <b>a mayor estatura, mayor peso</b>. Esta relación es <b>${fuerza}</b>.`);
+  else out.push(`Con los datos de ${n} personas, el peso tiende a <b>bajar</b> cuando sube la estatura (relación ${fuerza}). Es un resultado poco habitual; conviene revisar los datos.`);
+  if (!lin.error) {
+    const d = lin.coef[1] * 10;
+    out.push(`Según una línea recta que resume los datos, por cada 10 cm más de estatura el peso ${d >= 0 ? 'aumenta' : 'disminuye'} en promedio unos <b>${fmt(Math.abs(d), 1)} kg</b>.`);
+    out.push(`La estatura explica cerca del <b>${fmt(lin.stats.r2 * 100, 0)} %</b> de las diferencias de peso entre estas personas; el resto depende de otros factores (contextura, edad, hábitos). Al estimar el peso de alguien, el error típico es de unos <b>${fmt(lin.stats.syx, 1)} kg</b>.`);
+  }
+  if (!lin.error && !quad.error) {
+    out.push(quad.stats.r2 - lin.stats.r2 < 0.01
+      ? 'Usar una curva en lugar de una recta casi no mejora el resultado, así que la recta es suficiente y más fácil de entender.'
+      : 'Una curva se ajusta un poco mejor que la recta, aunque es más difícil de interpretar.');
+  }
+  const best = loo.filter(s => s.m.n).sort((x, y) => x.m.mse - y.m.mse)[0];
+  if (best) out.push(`Para comprobar qué tan bien se puede estimar el peso de alguien "nuevo", se ocultó a cada persona y se estimó su peso con las demás. El método de interpolación más preciso fue el de <b>grado ${best.degree}</b>, con un error promedio de unos <b>${fmt(best.m.mae, 1)} kg</b>.`);
+  out.push(`<b>Importante:</b> son aproximaciones, no valores exactos. No sirven para diagnosticar la salud de nadie ni para estaturas fuera del rango medido (${Math.min(...R.x)}–${Math.max(...R.x)} cm), y que dos cosas vayan juntas no significa que una cause la otra.`);
+  return '<div class="pub">' + out.map(t => `<p>${t}</p>`).join('') + '</div>';
+}
