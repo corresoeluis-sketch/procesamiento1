@@ -82,12 +82,21 @@ function showProc() {
   Charts.scatter('cReg', data, curves);
 }
 function showRes() {
-  const { lin, quad, loo, r } = R, row = (n, s) => s ? `<tr><td>${n}</td><td>${fmt(s.sse)}</td><td>${fmt(s.sy)}</td><td>${fmt(s.syx)}</td><td>${fmt(s.r2, 6)}</td></tr>` : '';
-  let h = `<div class="cards"><div class="card">n<b>${data.length}</b></div><div class="card">r (Pearson)<b>${fmt(r, 6)}</b></div>
-  <div class="card">R² lineal<b>${fmt(lin.stats?.r2, 6)}</b></div><div class="card">R² cuadrático<b>${fmt(quad.stats?.r2, 6)}</b></div></div>
-  <h3>Regresión</h3><table><tr><th>Modelo</th><th>SSE</th><th>s_y</th><th>s_y/x</th><th>R²</th></tr>${row('Lineal (p=2)', lin.stats)}${row('Cuadrática (p=3)', quad.stats)}</table>
-  <h3>Lagrange local: LOOCV</h3><table><tr><th>Grado</th><th>n eval.</th><th>MAE</th><th>MSE</th><th>MAPE %</th><th>Desv. rel. %</th><th>R² fuera</th></tr>
-  ${loo.map(s => `<tr><td>${s.degree}</td><td>${s.m.n}</td><td>${fmt(s.m.mae)}</td><td>${fmt(s.m.mse)}</td><td>${fmt(s.m.mape, 3)}</td><td>${fmt(s.m.sdRel, 3)}</td><td>${fmt(s.m.r2, 4)}</td></tr>`).join('')}</table>`;
+const { lin, quad, loo, r } = R, row = (n, s) => s ? `<tr><td>${n}</td><td>${fmt(s.sse)}</td><td>${fmt(s.sy)}</td><td>${fmt(s.syx)}</td></tr>` : '';
+
+let h = `<div class="cards"><div class="card">n<b>${data.length}</b></div><div class="card">r (Pearson)<b>${fmt(r, 6)}</b></div></div>
+
+<h3>Regresión</h3>
+<table>
+<tr><th>Modelo</th><th>SSE</th><th>s_y</th><th>s_y/x</th></tr>
+${row('Lineal (p=2)', lin.stats)}
+${row('Cuadrática (p=3)', quad.stats)}
+</table>
+
+<h3>Lagrange local: LOOCV</h3>
+<table>
+<tr><th>Grado</th><th>n eval.</th><th>MAE</th><th>MSE</th><th>MAPE %</th><th>Desv. rel. %</th></tr>
+${loo.map(s => `<tr><td>${s.degree}</td><td>${s.m.n}</td><td>${fmt(s.m.mae)}</td><td>${fmt(s.m.mse)}</td><td>${fmt(s.m.mape, 3)}</td><td>${fmt(s.m.sdRel, 3)}</td></tr>`).join('')}</table>`;
   const ok = loo.filter(s => s.m.n);
   const best = ok.sort((a, b) => a.m.mse - b.m.mse)[0];
   h += `<h3>Conclusión para el público general</h3>${conclusionPublica()}<h3>Conclusión técnica (para especialistas)</h3><p>Entre ${data.length} observaciones, r = ${fmt(r, 4)}. ` +
